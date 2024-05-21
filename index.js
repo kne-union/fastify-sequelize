@@ -37,7 +37,7 @@ module.exports = fp(
       files.forEach(file => {
         const model = require(path.join(modelsPath, file))(sequelize, Sequelize.DataTypes);
         db[model.name] = model;
-        if (db[model.name].associations) db[model.name].associations(db);
+        if (db[model.name].associate) db[model.name].associate(db);
       });
       await sequelize.sync(syncOptions);
       console.log('models were synchronized successfully.');
