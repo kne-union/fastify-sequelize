@@ -34,20 +34,25 @@ module.exports = fp(
         { cwd: modelsPath }
       );
       const files = await glob(pattern, modelsGlobOptions);
-      files.forEach(file => {
-        const model = require(path.join(modelsPath, file))(sequelize, Sequelize.DataTypes);
-        db[model.name] = model;
-        if (db[model.name].associate) db[model.name].associate(db);
-      });
+      files
+        .map(file => {
+          const model = require(path.join(modelsPath, file))(sequelize, Sequelize.DataTypes);
+          db[model.name] = model;
+          return model;
+        })
+        .forEach(model => {
+          if (model.associate) model.associate(db);
+        });
       await sequelize.sync(syncOptions);
       console.log('models were synchronized successfully.');
     };
 
     config.modelsPath && (await addModels(path.join(process.cwd(), config.modelsPath)));
-    db.sequelize = sequelize;
-    db.Sequelize = Sequelize;
-    db.addModels = addModels;
+
+    sequelize.addModels = addModels;
     fastify.decorate(config.name || defaultConfig.name, db);
+    fastify.decorate('sequelize', sequelize);
+    fastify.decorate('Sequelize', Sequelize);
   },
   {
     name: 'fastify-sequelize'

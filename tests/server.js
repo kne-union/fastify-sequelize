@@ -14,8 +14,8 @@ fastify.register(require('../index'), {
   }
 });
 
-fastify.register(async function(instance, opts, done) {
-  instance.models.addModels(path.resolve('./models'));
+fastify.register(async function(fastify, opts, done) {
+  fastify.sequelize.addModels(path.resolve('./models'));
 });
 
 fastify.listen({ port: 3000 }, (err, address) => {
