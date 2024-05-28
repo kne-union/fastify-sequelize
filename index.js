@@ -11,9 +11,8 @@ const defaultConfig = {
     password: null
   },
   modelsPath: './models',
-  modelsGlobOptions: {
-    syncOptions: {}
-  },
+  glob: {},
+  syncOptions: {},
   name: 'models'
 };
 
@@ -21,19 +20,19 @@ module.exports = fp(
   async (fastify, options) => {
     const config = merge({}, defaultConfig, options);
     const sequelize = new Sequelize(config.db);
-    const db = {};
     const addModels = async (modelsPath, options) => {
-      const { pattern, syncOptions, ...modelsGlobOptions } = merge(
+      const db = {};
+      const { name, pattern, syncOptions, ...globOptions } = merge(
         {},
         {
           ignore: 'node_modules/**',
           pattern: '**/*.js'
         },
-        config.modelsGlobOptions,
+        config.glob,
         options,
         { cwd: modelsPath }
       );
-      const files = await glob(pattern, modelsGlobOptions);
+      const files = await glob(pattern, globOptions);
       files
         .map(file => {
           const model = require(path.join(modelsPath, file))(sequelize, Sequelize.DataTypes);
@@ -43,16 +42,18 @@ module.exports = fp(
         .forEach(model => {
           if (model.associate) model.associate(db);
         });
-      await sequelize.sync(syncOptions);
-      console.log('models were synchronized successfully.');
+      return db;
     };
-
-    config.modelsPath && (await addModels(path.join(process.cwd(), config.modelsPath)));
-
-    sequelize.addModels = addModels;
-    fastify.decorate(config.name || defaultConfig.name, db);
-    fastify.decorate('sequelize', sequelize);
-    fastify.decorate('Sequelize', Sequelize);
+    fastify.decorate('sequelize', {
+      addModels,
+      Sequelize,
+      [config.name || defaultConfig.name]: config.modelsPath && (await addModels(path.join(process.cwd(), config.modelsPath))),
+      instance: sequelize,
+      sync: async options => {
+        await sequelize.sync(Object.assign({}, config.syncOptions, options));
+        console.log('models were synchronized successfully.');
+      }
+    });
   },
   {
     name: 'fastify-sequelize'
