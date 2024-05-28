@@ -1,6 +1,6 @@
 {
   "name": "@kne/fastify-sequelize",
-  "version": "0.1.3",
+  "version": "1.0.0",
   "description": "用于封装sequelize调用",
   "main": "index.js",
   "scripts": {
