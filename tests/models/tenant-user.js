@@ -1,7 +1,7 @@
 module.exports = ({ DataTypes }) => {
   return {
     model: {
-      name: DataTypes.STRING
+      name: DataTypes.STRING, tenantUserId: DataTypes.STRING
     }
   };
 };
