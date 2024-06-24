@@ -3,6 +3,8 @@ const Sequelize = require('sequelize');
 const path = require('path');
 const { glob } = require('glob');
 const merge = require('lodash/merge');
+const camelCase = require('lodash/camelCase');
+const snakeCase = require('lodash/snakeCase');
 
 const defaultConfig = {
   db: {
@@ -11,6 +13,7 @@ const defaultConfig = {
     password: null
   },
   modelsPath: './models',
+  prefix: 't_',
   glob: {},
   syncOptions: {},
   name: 'models'
@@ -35,9 +38,23 @@ module.exports = fp(
       const files = await glob(pattern, globOptions);
       files
         .map(file => {
-          const model = require(path.join(modelsPath, file))(sequelize, Sequelize.DataTypes);
-          db[model.name] = model;
-          return model;
+          const { name, model, associate, options } = require(path.join(modelsPath, file))({ sequelize, DataTypes: Sequelize.DataTypes });
+
+          const modelName = name || camelCase(path.basename(file, path.extname(file)));
+          db[modelName] = sequelize.define(
+            modelName,
+            model,
+            Object.assign(
+              {
+                paranoid: true,
+                tableName: config.prefix + snakeCase(modelName),
+                underscored: true
+              },
+              options
+            )
+          );
+          db[modelName].associate = associate;
+          return db[modelName];
         })
         .forEach(model => {
           if (model.associate) model.associate(db);
