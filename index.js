@@ -24,7 +24,8 @@ module.exports = fp(
     const config = merge({}, defaultConfig, options);
     const sequelize = new Sequelize(config.db);
     const addModels = async (modelsPath, options) => {
-      const db = {};
+      const db = {},
+        addModelsOptions = Object.assign({}, options);
       const { name, pattern, syncOptions, ...globOptions } = merge(
         {},
         {
@@ -50,7 +51,7 @@ module.exports = fp(
             Object.assign(
               {
                 paranoid: true,
-                tableName: (options.prefix || config.prefix || 't_') + snakeCase(modelName),
+                tableName: (addModelsOptions.prefix || config.prefix || 't_') + snakeCase(modelName),
                 underscored: true
               },
               options
