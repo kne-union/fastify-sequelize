@@ -38,7 +38,10 @@ module.exports = fp(
       const files = await glob(pattern, globOptions);
       files
         .map(file => {
-          const { name, model, associate, options } = require(path.join(modelsPath, file))({ sequelize, DataTypes: Sequelize.DataTypes });
+          const { name, model, associate, options } = require(path.join(modelsPath, file))({
+            sequelize,
+            DataTypes: Sequelize.DataTypes
+          });
 
           const modelName = name || camelCase(path.basename(file, path.extname(file)));
           db[modelName] = sequelize.define(
@@ -47,7 +50,7 @@ module.exports = fp(
             Object.assign(
               {
                 paranoid: true,
-                tableName: config.prefix + snakeCase(modelName),
+                tableName: (options.prefix || config.prefix || 't_') + snakeCase(modelName),
                 underscored: true
               },
               options
