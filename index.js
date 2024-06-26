@@ -61,7 +61,7 @@ module.exports = fp(
           return db[modelName];
         })
         .forEach(model => {
-          if (model.associate) model.associate(db);
+          if (model.associate) model.associate(db, fastify, options);
         });
       return db;
     };
