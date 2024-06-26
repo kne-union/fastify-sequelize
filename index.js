@@ -41,7 +41,9 @@ module.exports = fp(
         .map(file => {
           const { name, model, associate, options } = require(path.join(modelsPath, file))({
             sequelize,
-            DataTypes: Sequelize.DataTypes
+            DataTypes: Sequelize.DataTypes,
+            fastify,
+            options: config
           });
 
           const modelName = name || camelCase(path.basename(file, path.extname(file)));
@@ -61,7 +63,7 @@ module.exports = fp(
           return db[modelName];
         })
         .forEach(model => {
-          if (model.associate) model.associate(db, fastify, options);
+          if (model.associate) model.associate(db);
         });
       return db;
     };
