@@ -64,7 +64,7 @@ module.exports = fp(
               {},
               {
                 id: {
-                  type: Sequelize.DataTypes.BIGINT,
+                  type: Sequelize.DataTypes.BIGINT.UNSIGNED,
                   primaryKey: true,
                   set() {
                     return getUniqueID();
