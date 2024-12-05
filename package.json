@@ -1,6 +1,6 @@
 {
   "name": "@kne/fastify-sequelize",
-  "version": "2.0.5",
+  "version": "3.0.0-alpha.0",
   "description": "用于封装sequelize调用",
   "main": "index.js",
   "scripts": {
@@ -41,6 +41,7 @@
     "fastify-plugin": "^4.5.1",
     "glob": "^10.3.15",
     "lodash": "^4.17.21",
+    "nodejs-snowflake": "^2.0.1",
     "sequelize": "^6.37.3"
   }
 }
