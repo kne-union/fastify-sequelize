@@ -1,12 +1,10 @@
-const fp = require('fastify-plugin');
-const Sequelize = require('sequelize');
-const fs = require('fs');
-const path = require('path');
-const { glob } = require('glob');
-const merge = require('lodash/merge');
-const camelCase = require('lodash/camelCase');
-const snakeCase = require('lodash/snakeCase');
-const { Snowflake } = require('nodejs-snowflake');
+import fp from 'fastify-plugin';
+import { Sequelize, DataTypes } from 'sequelize';
+import fs from 'node:fs';
+import path from 'node:path';
+import { glob } from 'glob';
+import { merge, camelCase, snakeCase } from 'lodash-es';
+import { Snowflake } from 'nodejs-snowflake';
 
 const defaultConfig = {
   db: {
@@ -25,7 +23,7 @@ const defaultConfig = {
   name: 'models'
 };
 
-module.exports = fp(
+const sequelize = fp(
   async (fastify, options) => {
     const config = merge({}, defaultConfig, options);
     const { getUniqueID } = new Snowflake(config.snowflake);
@@ -49,7 +47,7 @@ module.exports = fp(
         const registerDB = (module, targetName) => {
           const { name, model, associate, options } = module({
             sequelize,
-            DataTypes: Sequelize.DataTypes,
+            DataTypes,
             fastify,
             options: config
           });
@@ -64,7 +62,7 @@ module.exports = fp(
               {},
               {
                 id: {
-                  type: Sequelize.DataTypes.BIGINT.UNSIGNED,
+                  type: DataTypes.BIGINT.UNSIGNED,
                   primaryKey: true,
                   set() {
                     return getUniqueID();
@@ -129,3 +127,5 @@ module.exports = fp(
     name: 'fastify-sequelize'
   }
 );
+
+export default sequelize;
