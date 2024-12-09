@@ -85,9 +85,13 @@ const sequelize = fp(
 
         if (stat && stat.isDirectory()) {
           const files = await glob(pattern, Object.assign({}, globOptions, { cwd: modelsPath }));
-          files.forEach(file => {
-            registerDB(require(path.join(modelsPath, file)), camelCase(path.basename(file, path.extname(file))));
-          });
+
+          await Promise.all(
+            files.map(async file => {
+              const { default: module } = await import(`file://${path.resolve(modelsPath, file)}`);
+              registerDB(module, camelCase(path.basename(file, path.extname(file))));
+            })
+          );
           return;
         }
         if (stat && stat.isFile()) {
