@@ -26,7 +26,7 @@ const defaultConfig = {
 const sequelize = fp(
   async (fastify, options) => {
     const config = merge({}, defaultConfig, options);
-    const { getUniqueID } = new Snowflake(config.snowflake);
+    const snowflake = new Snowflake(config.snowflake);
     const sequelize = new Sequelize(config.db);
     const modelList = [];
     const addModels = async (modelsPath, options) => {
@@ -63,10 +63,7 @@ const sequelize = fp(
               {
                 id: {
                   type: DataTypes.BIGINT.UNSIGNED,
-                  primaryKey: true,
-                  set() {
-                    return getUniqueID();
-                  }
+                  primaryKey: true
                 }
               },
               model
@@ -80,6 +77,10 @@ const sequelize = fp(
               options
             )
           );
+          db[modelName].beforeCreate(info => {
+            info.id = snowflake.getUniqueID();
+            return info;
+          });
           db[modelName].associate = associate;
         };
 
