@@ -63,7 +63,11 @@ const sequelize = fp(
               {
                 id: {
                   type: DataTypes.BIGINT.UNSIGNED,
-                  primaryKey: true
+                  primaryKey: true,
+                  get() {
+                    const id = this.getDataValue('id');
+                    return id && id.toString();
+                  }
                 }
               },
               model
