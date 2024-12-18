@@ -29,6 +29,21 @@ const sequelize = fp(
     const snowflake = new Snowflake(config.snowflake);
     const sequelize = new Sequelize(config.db);
     const modelList = [];
+
+    const definePrimaryType = (name, props) => {
+      return Object.assign(
+        {},
+        {
+          type: DataTypes.BIGINT.UNSIGNED,
+          get() {
+            const value = this.getDataValue(name);
+            return value && value.toString();
+          }
+        },
+        props
+      );
+    };
+
     const addModels = async (modelsPath, options) => {
       const db = {},
         addModelsOptions = Object.assign({}, options);
@@ -48,6 +63,7 @@ const sequelize = fp(
           const { name, model, associate, options } = module({
             sequelize,
             DataTypes,
+            definePrimaryType,
             fastify,
             options: config
           });
@@ -61,14 +77,7 @@ const sequelize = fp(
             Object.assign(
               {},
               {
-                id: {
-                  type: DataTypes.BIGINT.UNSIGNED,
-                  primaryKey: true,
-                  get() {
-                    const id = this.getDataValue('id');
-                    return id && id.toString();
-                  }
-                }
+                id: definePrimaryType('id', { primaryKey: true })
               },
               model
             ),
