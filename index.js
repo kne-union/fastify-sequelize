@@ -1,10 +1,10 @@
-import fp from 'fastify-plugin';
-import { Sequelize, DataTypes } from 'sequelize';
-import fs from 'node:fs';
-import path from 'node:path';
-import { glob } from 'glob';
-import { merge, camelCase, snakeCase } from 'lodash-es';
-import { Snowflake } from 'nodejs-snowflake';
+const fp = require('fastify-plugin');
+const { Sequelize, DataTypes } = require('sequelize');
+const fs = require('node:fs');
+const path = require('node:path');
+const { glob } = require('glob');
+const { merge, camelCase, snakeCase } = require('lodash');
+const { Snowflake } = require('nodejs-snowflake');
 
 const defaultConfig = {
   db: {
@@ -146,4 +146,4 @@ const sequelize = fp(
   }
 );
 
-export default sequelize;
+module.exports = sequelize;
