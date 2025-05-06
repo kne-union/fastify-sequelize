@@ -2,7 +2,7 @@ const fastify = require('fastify')({
   logger: true
 });
 
-const path = require('path');
+const path = require('node:path');
 
 const sqliteStorage = path.resolve('./database.sqlite');
 
@@ -14,7 +14,7 @@ fastify.register(require('../index'), {
   }
 });
 
-fastify.register(async (fastify, opts, done)=> {
+fastify.register(async (fastify)=> {
   await fastify.sequelize.addModels(path.resolve('./models'));
   await fastify.sequelize.sync();
 });
