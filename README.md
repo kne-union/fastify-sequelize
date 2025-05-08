@@ -101,7 +101,7 @@ module.exports = ({ DataTypes }) => ({
     content: DataTypes.TEXT
   },
   associate(db) {
-    this.model.belongsTo(db.User, { 
+     db.Post.belongsTo(db.User, { 
       foreignKey: 'authorId',
       as: 'author'
     });
