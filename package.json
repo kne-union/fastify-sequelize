@@ -1,7 +1,7 @@
 {
   "name": "@kne/fastify-sequelize",
-  "version": "3.0.0-alpha.7",
-  "description": "用于封装sequelize调用",
+  "version": "3.0.0",
+  "description": "Fastify与Sequelize的深度集成插件，支持自动模型加载和分布式ID生成",
   "main": "index.js",
   "scripts": {
     "init": "husky",
@@ -24,7 +24,13 @@
     "type": "git",
     "url": "git+https://github.com/kne-union/fastify-sequelize.git"
   },
-  "keywords": [],
+  "keywords": [
+    "fastify-plugin",
+    "sequelize-orm",
+    "database-integration",
+    "automatic-models",
+    "distributed-ids"
+  ],
   "author": "linzp",
   "license": "ISC",
   "bugs": {
