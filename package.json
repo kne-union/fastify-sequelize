@@ -1,6 +1,6 @@
 {
   "name": "@kne/fastify-sequelize",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "Fastify与Sequelize的深度集成插件，支持自动模型加载和分布式ID生成",
   "main": "index.js",
   "scripts": {

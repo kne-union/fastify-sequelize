@@ -94,6 +94,12 @@ const sequelize = fp(
             info.id = snowflake.getUniqueID();
             return info;
           });
+          db[modelName].beforeBulkCreate(infos => {
+            infos.forEach(info => {
+              info.id = snowflake.getUniqueID();
+            });
+            return infos;
+          });
           db[modelName].associate = associate;
         };
 
