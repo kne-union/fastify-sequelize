@@ -94,6 +94,12 @@ const sequelize = fp(
             info.id = snowflake.getUniqueID();
             return info;
           });
+          db[modelName].beforeBulkCreate(infos => {
+            infos.forEach(info => {
+              info.id = snowflake.getUniqueID();
+            });
+            return infos;
+          });
           db[modelName].associate = associate;
         };
 
@@ -130,6 +136,7 @@ const sequelize = fp(
       Sequelize,
       [config.name || defaultConfig.name]: stat && stat.isDirectory() && (await addModels(path.join(process.cwd(), config.modelsPath))),
       instance: sequelize,
+      generateId: () => snowflake.getUniqueID(),
       sync: async options => {
         modelList.forEach(db => {
           Object.values(db).forEach(model => {
