@@ -46,7 +46,7 @@ const sequelize = fp(
 
     const addModels = async (modelsPath, options) => {
       const db = {},
-        addModelsOptions = Object.assign({}, options);
+        addModelsOptions = Object.assign({}, config, options);
       const { name, pattern, syncOptions, ...globOptions } = merge(
         {},
         {
@@ -56,7 +56,8 @@ const sequelize = fp(
         config.glob,
         options
       );
-      const stat = typeof modelsPath === 'string' && (await fs.promises.stat(modelsPath).catch(() => {}));
+      const stat = typeof modelsPath === 'string' && (await fs.promises.stat(modelsPath).catch(() => {
+      }));
 
       await (async () => {
         const registerDB = (module, targetName) => {
@@ -65,7 +66,7 @@ const sequelize = fp(
             DataTypes,
             definePrimaryType,
             fastify,
-            options: config
+            options: addModelsOptions
           });
           const modelName = name || targetName;
 
@@ -129,12 +130,13 @@ const sequelize = fp(
       modelList.push(db);
       return db;
     };
-    const stat = config.modelsPath && (await fs.promises.stat(path.join(process.cwd(), config.modelsPath)).catch(() => {}));
+    const stat = config.modelsPath && (await fs.promises.stat(path.join(process.cwd(), config.modelsPath)).catch(() => {
+    }));
 
     fastify.decorate('sequelize', {
       addModels,
       Sequelize,
-      [config.name || defaultConfig.name]: stat && stat.isDirectory() && (await addModels(path.join(process.cwd(), config.modelsPath))),
+      [config.name || defaultConfig.name]: stat && stat.isDirectory() && (await addModels(path.join(process.cwd(), config.modelsPath), config)),
       instance: sequelize,
       generateId: () => snowflake.getUniqueID(),
       sync: async options => {
