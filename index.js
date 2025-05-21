@@ -34,7 +34,7 @@ const sequelize = fp(
       return Object.assign(
         {},
         {
-          type: DataTypes.BIGINT.UNSIGNED,
+          type: DataTypes.BIGINT,
           get() {
             const value = this.getDataValue(name);
             return value && value.toString();
