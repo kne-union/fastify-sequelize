@@ -22,7 +22,7 @@ const sequelize = fp(async (fastify, options) => {
 
   const definePrimaryType = (name, props) => {
     return Object.assign({}, {
-      type: DataTypes.BIGINT, get() {
+      type: config.db?.dialect === 'sqlite' ? DataTypes.STRING : DataTypes.BIGINT, get() {
         const value = this.getDataValue(name);
         return value && value.toString();
       }
