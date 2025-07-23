@@ -3,7 +3,7 @@ const { Sequelize, DataTypes } = require('sequelize');
 const fs = require('node:fs');
 const path = require('node:path');
 const { glob } = require('glob');
-const { merge, camelCase, snakeCase } = require('lodash');
+const { transform, merge, camelCase, snakeCase, upperFirst, lowerFirst } = require('lodash');
 const { Snowflake } = require('nodejs-snowflake');
 
 const defaultConfig = {
@@ -42,11 +42,12 @@ const sequelize = fp(async (fastify, options) => {
         const { name, model, associate, options } = module({
           sequelize, DataTypes, definePrimaryType, fastify, options: addModelsOptions
         });
-        const modelName = name || targetName;
-
+        const originModelName = name || targetName;
+        const modelName = addModelsOptions.modelPrefix ? `${addModelsOptions.modelPrefix}${upperFirst(originModelName)}` : originModelName;
         if (!modelName) {
           throw new Error('未能正确获取到modelName');
         }
+
         db[modelName] = sequelize.define(modelName, Object.assign({}, {
           id: definePrimaryType('id', { primaryKey: true })
         }, model), Object.assign({
@@ -65,6 +66,7 @@ const sequelize = fp(async (fastify, options) => {
           return infos;
         });
         db[modelName].associate = associate;
+        db[modelName].modelPrefix = addModelsOptions.modelPrefix;
       };
 
       if (stat && stat.isDirectory()) {
@@ -109,7 +111,10 @@ const sequelize = fp(async (fastify, options) => {
     sync: async options => {
       modelList.forEach(db => {
         Object.values(db).forEach(model => {
-          if (model.associate) model.associate(db, fastify, options);
+          const target = model.modelPrefix ? transform(db, (result, value, key) => {
+            result[lowerFirst(key.replace(new RegExp(`^${model.modelPrefix}`), ''))] = value;
+          }, {}) : db;
+          if (model.associate) model.associate(target, fastify, options);
         });
       });
       await sequelize.sync(Object.assign({}, config.syncOptions, options));
