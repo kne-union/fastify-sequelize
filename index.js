@@ -91,7 +91,9 @@ const sequelize = fp(async (fastify, options) => {
       console.warn('未发现任何models模块,ags:' + modelsPath);
     })();
     modelList.push(db);
-    return db;
+    return addModelsOptions.modelPrefix ? transform(db, (result, value, key) => {
+      result[lowerFirst(key.replace(new RegExp(`^${addModelsOptions.modelPrefix}`), ''))] = value;
+    }, {}) : db;
   };
   const stat = config.modelsPath && (await fs.promises.stat(path.join(process.cwd(), config.modelsPath)).catch(() => {
   }));
