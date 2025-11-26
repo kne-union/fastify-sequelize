@@ -46,6 +46,8 @@ const sequelize = fp(async (fastify, options) => {
         db[alias] = value;
       });
     }
+
+    return db;
   };
 
   const addModels = async (modelsPath, options) => {
@@ -134,9 +136,7 @@ const sequelize = fp(async (fastify, options) => {
     sync: async options => {
       modelList.forEach(db => {
         Object.values(db).forEach(model => {
-          const target = Object.assign({}, db);
-          model.modelPrefix && appendModelPrefixAlias(target, model.modelPrefix);
-          if (model.associate) model.associate(target, fastify, options);
+          if (model.associate) model.associate(model.modelPrefix ? appendModelPrefixAlias(Object.assign({}, db), model.modelPrefix) : db, fastify, options);
         });
       });
       await sequelize.sync(Object.assign({}, config.syncOptions, options));
