@@ -1,10 +1,10 @@
 const fp = require('fastify-plugin');
-const {Sequelize, DataTypes} = require('sequelize');
+const { Sequelize, DataTypes } = require('sequelize');
 const fs = require('fs-extra');
 const path = require('node:path');
-const {glob} = require('glob');
-const {transform, merge, camelCase, snakeCase, upperFirst, lowerFirst} = require('lodash');
-const {Snowflake} = require('nodejs-snowflake');
+const { glob } = require('glob');
+const { transform, merge, camelCase, snakeCase, upperFirst, lowerFirst } = require('lodash');
+const { Snowflake } = require('nodejs-snowflake');
 
 const defaultConfig = {
   db: {
@@ -31,7 +31,7 @@ const sequelize = fp(async (fastify, options) => {
 
   const addModels = async (modelsPath, options) => {
     const db = {}, addModelsOptions = Object.assign({}, config, options);
-    const {name, pattern, syncOptions, ...globOptions} = merge({}, {
+    const { name, pattern, syncOptions, ...globOptions } = merge({}, {
       ignore: 'node_modules/**', pattern: '**/*.js'
     }, config.glob, options);
     const stat = typeof modelsPath === 'string' && (await fs.promises.stat(modelsPath).catch(() => {
@@ -39,17 +39,21 @@ const sequelize = fp(async (fastify, options) => {
 
     await (async () => {
       const registerDB = (module, targetName) => {
-        const {name, model, associate, options} = module({
+        const { name, model, associate, options } = module({
           sequelize, DataTypes, definePrimaryType, fastify, options: addModelsOptions
         });
         const originModelName = name || targetName;
-        const modelName = addModelsOptions.modelPrefix ? `${addModelsOptions.modelPrefix}${upperFirst(originModelName)}` : originModelName;
+        const modelName = addModelsOptions.modelPrefix ? (originModelName.indexOf(addModelsOptions.modelPrefix) === 0 ? originModelName : `${addModelsOptions.modelPrefix}${upperFirst(originModelName)}`) : originModelName;
         if (!modelName) {
           throw new Error('未能正确获取到modelName');
         }
 
+        if (db[modelName]) {
+          throw new Error(`${modelName} 模型定义冲突`);
+        }
+
         db[modelName] = sequelize.define(modelName, Object.assign({}, {
-          id: definePrimaryType('id', {primaryKey: true})
+          id: definePrimaryType('id', { primaryKey: true })
         }, model), Object.assign({
           paranoid: true,
           tableName: (addModelsOptions.prefix || config.prefix || 't_') + snakeCase(modelName),
@@ -70,10 +74,10 @@ const sequelize = fp(async (fastify, options) => {
       };
 
       if (stat && stat.isDirectory()) {
-        const files = await glob(pattern, Object.assign({}, globOptions, {cwd: modelsPath}));
+        const files = await glob(pattern, Object.assign({}, globOptions, { cwd: modelsPath }));
 
         await Promise.all(files.map(async file => {
-          const {default: module} = await import(`file://${path.resolve(modelsPath, file)}`);
+          const { default: module } = await import(`file://${path.resolve(modelsPath, file)}`);
           registerDB(module, camelCase(path.basename(file, path.extname(file))));
         }));
         return;
@@ -91,9 +95,7 @@ const sequelize = fp(async (fastify, options) => {
       console.warn('未发现任何models模块,ags:' + modelsPath);
     })();
     modelList.push(db);
-    return addModelsOptions.modelPrefix ? transform(db, (result, value, key) => {
-      result[lowerFirst(key.replace(new RegExp(`^${addModelsOptions.modelPrefix}`), ''))] = value;
-    }, {}) : db;
+    return db;
   };
   const stat = config.modelsPath && (await fs.promises.stat(path.join(process.cwd(), config.modelsPath)).catch(() => {
   }));
@@ -113,10 +115,7 @@ const sequelize = fp(async (fastify, options) => {
     sync: async options => {
       modelList.forEach(db => {
         Object.values(db).forEach(model => {
-          const target = model.modelPrefix ? transform(db, (result, value, key) => {
-            result[lowerFirst(key.replace(new RegExp(`^${model.modelPrefix}`), ''))] = value;
-          }, {}) : db;
-          if (model.associate) model.associate(target, fastify, options);
+          if (model.associate) model.associate(db, fastify, options);
         });
       });
       await sequelize.sync(Object.assign({}, config.syncOptions, options));
