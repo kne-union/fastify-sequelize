@@ -29,6 +29,25 @@ const sequelize = fp(async (fastify, options) => {
     }, props);
   };
 
+  const appendModelPrefixAlias = (db, modelPrefix) => {
+    if (modelPrefix) {
+      Object.keys(db).forEach((key) => {
+        const value = db[key];
+        if (modelPrefix === key) {
+          return;
+        }
+
+        const alias = lowerFirst(key.replace(new RegExp(`^${modelPrefix}`), ''));
+
+        if (db[alias]) {
+          return;
+        }
+
+        db[alias] = value;
+      });
+    }
+  };
+
   const addModels = async (modelsPath, options) => {
     const db = {}, addModelsOptions = Object.assign({}, config, options);
     const { name, pattern, syncOptions, ...globOptions } = merge({}, {
@@ -94,6 +113,7 @@ const sequelize = fp(async (fastify, options) => {
 
       console.warn('未发现任何models模块,ags:' + modelsPath);
     })();
+    appendModelPrefixAlias(db, addModelsOptions.modelPrefix);
     modelList.push(db);
     return db;
   };
