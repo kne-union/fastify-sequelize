@@ -113,9 +113,8 @@ const sequelize = fp(async (fastify, options) => {
 
       console.warn('未发现任何models模块,ags:' + modelsPath);
     })();
-    appendModelPrefixAlias(db, addModelsOptions.modelPrefix);
     modelList.push(db);
-    return db;
+    return addModelsOptions.modelPrefix ? appendModelPrefixAlias(Object.assign({}, db), addModelsOptions.modelPrefix) : db;
   };
   const stat = config.modelsPath && (await fs.promises.stat(path.join(process.cwd(), config.modelsPath)).catch(() => {
   }));
@@ -135,7 +134,9 @@ const sequelize = fp(async (fastify, options) => {
     sync: async options => {
       modelList.forEach(db => {
         Object.values(db).forEach(model => {
-          if (model.associate) model.associate(db, fastify, options);
+          const target = Object.assign({}, db);
+          model.modelPrefix && appendModelPrefixAlias(target, model.modelPrefix);
+          if (model.associate) model.associate(target, fastify, options);
         });
       });
       await sequelize.sync(Object.assign({}, config.syncOptions, options));
