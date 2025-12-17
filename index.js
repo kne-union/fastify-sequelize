@@ -139,7 +139,6 @@ const sequelize = fp(async (fastify, options) => {
           if (model.associate) model.associate(model.modelPrefix ? appendModelPrefixAlias(Object.assign({}, db), model.modelPrefix) : db, fastify, options);
         });
       });
-      await sequelize.sync(Object.assign({}, config.syncOptions, options));
       //增加更新表结构操作
       console.log('-----------开始执行sql数据库更新脚本-----------');
       try {
@@ -157,6 +156,7 @@ const sequelize = fp(async (fastify, options) => {
         console.error(error);
       }
       console.log('-----------完成执行sql数据库更新脚本-----------');
+      await sequelize.sync(Object.assign({}, config.syncOptions, options));
       console.log('models were synchronized successfully.');
       syncPromiseResolve();
     }
