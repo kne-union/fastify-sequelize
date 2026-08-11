@@ -10,8 +10,10 @@ Fastify与Sequelize的深度集成插件，支持自动模型加载和分布式I
 ### 安装
 
 ```shell
-npm i --save @kne/fastify-sequelize
+npm i --save @kne/fastify-sequelize fastify sequelize
 ```
+
+Peer：`fastify`（>=5）、`sequelize`（>=6 <7）。要求 Node.js >=18。
 
 
 ### 概述
