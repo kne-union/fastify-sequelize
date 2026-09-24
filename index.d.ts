@@ -70,6 +70,11 @@ export interface ConnectionOverrides {
   sqlFailFast?: boolean;
   runSqlOnSync?: boolean;
   prefix?: string;
+  /**
+   * 为 true 时连接级 prefix 强制生效（ignore addModels/model tableName）。
+   * 未设置时：存在环境变量 DB_TABLE_PREFIX 则默认 true。
+   */
+  forcePrefix?: boolean;
   modelPrefix?: string;
   name?: string;
   glob?: Record<string, unknown>;
@@ -95,6 +100,11 @@ export interface FastifySequelizeOptions {
   sqlFailFast?: boolean;
   runSqlOnSync?: boolean;
   prefix?: string;
+  /**
+   * 为 true 时连接级 prefix 强制生效（ignore addModels/model tableName）。
+   * 未设置时：存在环境变量 DB_TABLE_PREFIX 则默认 true。
+   */
+  forcePrefix?: boolean;
   modelPrefix?: string;
   /** 默认库模型挂载名，默认 `models` */
   name?: string;
@@ -140,6 +150,11 @@ export interface SequelizeConnection {
   instance: Sequelize;
   Sequelize: typeof Sequelize;
   utils: SequelizeUtils;
+  /** 当前连接生效的表名前缀 */
+  tablePrefix: string;
+  /** 是否强制表名前缀 */
+  forcePrefix: boolean;
+  getTablePrefix: () => string;
   models?: ModelsBag;
   addModels: (modelsPath: ModelsPathInput, options?: AddModelsOptions) => Promise<ModelsBag>;
   sync: (options?: SyncOptions) => Promise<void>;
@@ -158,6 +173,10 @@ export interface FastifySequelizeNamespace {
   instance: Sequelize;
   Sequelize: typeof Sequelize;
   utils: SequelizeUtils;
+  /** 默认连接生效的表名前缀 */
+  tablePrefix: string;
+  forcePrefix: boolean;
+  getTablePrefix: () => string;
   /** 默认库自动加载的模型（modelsPath 有效且 name 为默认值时） */
   models?: ModelsBag;
   addModels: (modelsPath: ModelsPathInput, options?: AddModelsOptions) => Promise<ModelsBag>;

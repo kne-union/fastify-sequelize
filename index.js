@@ -10,6 +10,47 @@ const { buildWhereQuery, buildPaginationQuery, formatPaginationResult } = requir
 const SQL_MIGRATIONS_TABLE = '_fs_sql_migrations';
 const DEFAULT_CONNECTION = 'default';
 
+const resolveEnvTablePrefix = () => {
+  const value = process.env.DB_TABLE_PREFIX;
+  if (value == null) {
+    return null;
+  }
+  const trimmed = String(value).trim();
+  return trimmed || null;
+};
+
+/**
+ * Connection table-prefix policy for shared-DB / multi-app hosts.
+ * - prefix: effective table name prefix
+ * - forcePrefix: when true, addModels({ prefix }) and model options.tableName cannot escape it
+ *
+ * Env `DB_TABLE_PREFIX` (e.g. injected by app-manager) enables force by default so child apps
+ * and plugins like account/message cannot register unprefixed / foreign prefixes on that connection.
+ */
+const resolvePrefixPolicy = (pluginOptions = {}, connectionOverrides = {}) => {
+  const envPrefix = resolveEnvTablePrefix();
+  const explicitPrefix =
+    connectionOverrides.prefix !== undefined
+      ? connectionOverrides.prefix
+      : pluginOptions.prefix !== undefined
+        ? pluginOptions.prefix
+        : undefined;
+  const explicitForce =
+    connectionOverrides.forcePrefix !== undefined
+      ? connectionOverrides.forcePrefix
+      : pluginOptions.forcePrefix;
+
+  const prefix =
+    explicitPrefix != null && String(explicitPrefix).trim() !== ''
+      ? String(explicitPrefix).trim()
+      : envPrefix || 't_';
+
+  const forcePrefix =
+    explicitForce === true ? true : explicitForce === false ? false : !!envPrefix;
+
+  return { prefix, forcePrefix };
+};
+
 const defaultConfig = {
   db: {
     dialect: 'sqlite',
@@ -27,6 +68,8 @@ const defaultConfig = {
   // 默认 SQL 失败即抛出；设为 false 可恢复旧版吞错行为
   sqlFailFast: true,
   prefix: 't_',
+  // undefined → 有 DB_TABLE_PREFIX 环境变量时自动 true
+  forcePrefix: undefined,
   glob: {},
   syncOptions: {},
   name: 'models',
@@ -85,7 +128,11 @@ const sequelizePlugin = fp(
     };
 
     const createContext = async (overrides = {}, registryKey = DEFAULT_CONNECTION) => {
-      const ctxConfig = merge({}, config, overrides);
+      const { prefix: resolvedPrefix, forcePrefix } = resolvePrefixPolicy(options, overrides);
+      const ctxConfig = merge({}, config, overrides, {
+        prefix: resolvedPrefix,
+        forcePrefix
+      });
       const sequelize = new Sequelize(ctxConfig.db);
       const modelList = [];
       const modelsKey = ctxConfig.name || defaultConfig.name;
@@ -107,6 +154,16 @@ const sequelizePlugin = fp(
           },
           props
         );
+      };
+
+      const getTablePrefix = (addOptions = {}) => {
+        if (ctxConfig.forcePrefix) {
+          return ctxConfig.prefix || 't_';
+        }
+        if (addOptions.prefix != null && String(addOptions.prefix).trim() !== '') {
+          return String(addOptions.prefix).trim();
+        }
+        return ctxConfig.prefix || 't_';
       };
 
       const ensureSqlMigrationsTable = async () => {
@@ -176,6 +233,7 @@ const sequelizePlugin = fp(
         const { connection: _ignored, ...options } = addOptions;
         const db = {};
         const addModelsOptions = Object.assign({}, ctxConfig, options);
+        const tablePrefix = getTablePrefix(options);
         const { name, pattern, syncOptions, ...globOptions } = merge(
           {},
           {
@@ -209,6 +267,7 @@ const sequelizePlugin = fp(
             throw new Error(`${modelName} 模型定义冲突`);
           }
 
+          const computedTableName = tablePrefix + snakeCase(modelName);
           db[modelName] = sequelize.define(
             modelName,
             Object.assign(
@@ -221,10 +280,12 @@ const sequelizePlugin = fp(
             Object.assign(
               {
                 paranoid: true,
-                tableName: (addModelsOptions.prefix || ctxConfig.prefix || 't_') + snakeCase(modelName),
+                tableName: computedTableName,
                 underscored: true
               },
-              modelOptions
+              modelOptions,
+              // 强约束：连接 forcePrefix 时不允许模型自行改写表名逃逸前缀
+              ctxConfig.forcePrefix ? { tableName: computedTableName } : null
             )
           );
           db[modelName].beforeCreate(info => {
@@ -243,6 +304,7 @@ const sequelizePlugin = fp(
           });
           db[modelName].associate = associate;
           db[modelName].modelPrefix = addModelsOptions.modelPrefix;
+          db[modelName].tablePrefix = tablePrefix;
         };
 
         if (stat && stat.isDirectory()) {
@@ -296,6 +358,9 @@ const sequelizePlugin = fp(
         sync,
         syncPromise,
         generateId: () => snowflake.getUniqueID(),
+        getTablePrefix: () => getTablePrefix(),
+        tablePrefix: ctxConfig.prefix,
+        forcePrefix: !!ctxConfig.forcePrefix,
         lastUsed: Date.now(),
         isTenant: String(registryKey).startsWith('tenant:'),
         touch() {
@@ -319,6 +384,9 @@ const sequelizePlugin = fp(
       const publicConn = {
         name: ctx.key,
         instance: ctx.instance,
+        tablePrefix: ctx.tablePrefix,
+        forcePrefix: ctx.forcePrefix,
+        getTablePrefix: () => ctx.getTablePrefix(),
         addModels: (...args) => {
           ctx.touch();
           return ctx.addModels(...args);
@@ -468,6 +536,9 @@ const sequelizePlugin = fp(
         formatPaginationResult
       },
       instance: defaultCtx.instance,
+      tablePrefix: defaultCtx.tablePrefix,
+      forcePrefix: defaultCtx.forcePrefix,
+      getTablePrefix: () => defaultCtx.getTablePrefix(),
       generateId: () => snowflake.getUniqueID(),
       syncPromise: defaultCtx.syncPromise,
       sync: async (syncOptions = {}) => {
