@@ -489,6 +489,68 @@ describe('@kne/fastify-sequelize', function () {
       const db = await app.sequelize.addModels(path.join(modelsDir, 'user.js'));
       expect(db.user.tableName).to.equal('global_user');
     });
+
+    it('should force connection prefix over addModels prefix when forcePrefix is true', async function () {
+      const modelsDir = await createModelsDir();
+      app = fastify();
+      await app.register(plugin, {
+        db: { dialect: 'sqlite', storage: DB_PATH },
+        prefix: 't_app_',
+        forcePrefix: true
+      });
+      await app.ready();
+      expect(app.sequelize.forcePrefix).to.equal(true);
+      expect(app.sequelize.tablePrefix).to.equal('t_app_');
+      const db = await app.sequelize.addModels(modelsDir, { prefix: 't_account_' });
+      expect(db.user.tableName).to.equal('t_app_user');
+      expect(db.user.tableName.startsWith('t_app_')).to.equal(true);
+    });
+
+    it('should auto force prefix from DB_TABLE_PREFIX env', async function () {
+      const modelsDir = await createModelsDir();
+      const prev = process.env.DB_TABLE_PREFIX;
+      process.env.DB_TABLE_PREFIX = 't_env_app_';
+      try {
+        app = fastify();
+        await app.register(plugin, {
+          db: { dialect: 'sqlite', storage: DB_PATH }
+        });
+        await app.ready();
+        expect(app.sequelize.forcePrefix).to.equal(true);
+        expect(app.sequelize.getTablePrefix()).to.equal('t_env_app_');
+        const db = await app.sequelize.addModels(modelsDir, { prefix: 't_account_' });
+        expect(db.user.tableName).to.equal('t_env_app_user');
+      } finally {
+        if (prev == null) {
+          delete process.env.DB_TABLE_PREFIX;
+        } else {
+          process.env.DB_TABLE_PREFIX = prev;
+        }
+      }
+    });
+
+    it('should allow opting out of env force with forcePrefix false', async function () {
+      const modelsDir = await createModelsDir();
+      const prev = process.env.DB_TABLE_PREFIX;
+      process.env.DB_TABLE_PREFIX = 't_env_app_';
+      try {
+        app = fastify();
+        await app.register(plugin, {
+          db: { dialect: 'sqlite', storage: DB_PATH },
+          forcePrefix: false
+        });
+        await app.ready();
+        expect(app.sequelize.forcePrefix).to.equal(false);
+        const db = await app.sequelize.addModels(modelsDir, { prefix: 't_account_' });
+        expect(db.user.tableName).to.equal('t_account_user');
+      } finally {
+        if (prev == null) {
+          delete process.env.DB_TABLE_PREFIX;
+        } else {
+          process.env.DB_TABLE_PREFIX = prev;
+        }
+      }
+    });
   });
 
   describe('边界情况测试', function () {

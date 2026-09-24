@@ -20,7 +20,8 @@
 | `sqlTrackMigrations` | boolean | `true` | 是否用 `_fs_sql_migrations` 表记录已执行脚本；`false` 则每次 sync 全量执行 |
 | `sqlFailFast` | boolean | `true` | SQL 脚本失败是否抛出；`false` 仅记录错误并继续 |
 | `runSqlOnSync` | boolean | `true` | 设为 `false` 可跳过 SQL 脚本执行 |
-| `prefix` | string | `'t_'` | 数据库表名前缀，最终表名为 `{prefix}{snake_case_modelName}` |
+| `prefix` | string | `'t_'` | 数据库表名前缀，最终表名为 `{prefix}{snake_case_modelName}`；未显式传入时可读环境变量 `DB_TABLE_PREFIX` |
+| `forcePrefix` | boolean | 有 `DB_TABLE_PREFIX` 时为 `true`，否则 `false` | 为 `true` 时连接级前缀强制生效，`addModels({ prefix })` 与模型 `options.tableName` 无法覆盖；设为 `false` 可关闭环境变量带来的强制 |
 | `modelPrefix` | string | - | 模型名前缀，注册模型时自动添加到模型名前，并生成去除前缀的别名 |
 | `name` | string | `'models'` | 在 `fastify.sequelize` 上的属性名，自动加载的模型挂载于此 |
 | `glob` | Object | `{}` | 传递给 `glob` 库的文件匹配选项 |
@@ -36,6 +37,9 @@
 |-----------|------|------|
 | `addModels(modelsPath, options?)` | Async Function | 添加模型，返回模型集合对象 `db`；`options.connection` 可指定命名连接 |
 | `instance` | Sequelize | **默认连接**的 Sequelize 实例（兼容旧用法） |
+| `tablePrefix` | string | 默认连接当前生效的表名前缀 |
+| `forcePrefix` | boolean | 默认连接是否强制表名前缀 |
+| `getTablePrefix()` | Function | 返回默认连接当前生效的表名前缀 |
 | `Sequelize` | Object | Sequelize 类引用 |
 | `generateId()` | Function | 生成 Snowflake 唯一 ID，返回字符串 |
 | `sync(options?)` | Async Function | 默认同步**默认连接**；传 `options.connection` 时只同步该连接（兼容；推荐 `connection(name).sync()`） |

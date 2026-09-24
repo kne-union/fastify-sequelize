@@ -81,6 +81,8 @@ fastify.register(fastifySequelize, {
 });
 ```
 
+> **共享库强约束**：宿主（如 app-manager）注入环境变量 `DB_TABLE_PREFIX=t_{app}_` 后，本插件默认 `forcePrefix=true`，该连接上所有 `addModels`（含 account / message / tenant 传入的 `prefix`）都必须以该前缀开头建表，无法改写逃逸。本地独立运行未设置该变量时行为与以往一致。
+
 ---
 
 ### 模型定义
