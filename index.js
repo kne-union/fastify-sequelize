@@ -6,6 +6,7 @@ const { glob } = require('glob');
 const { merge, camelCase, snakeCase, upperFirst, lowerFirst } = require('lodash');
 const { Snowflake } = require('nodejs-snowflake');
 const { buildWhereQuery, buildPaginationQuery, formatPaginationResult } = require('./libs/utils/buildWhereQuery');
+const { resolveIndexes } = require('./libs/utils/indexName');
 
 const SQL_MIGRATIONS_TABLE = '_fs_sql_migrations';
 const DEFAULT_CONNECTION = 'default';
@@ -268,6 +269,25 @@ const sequelizePlugin = fp(
           }
 
           const computedTableName = tablePrefix + snakeCase(modelName);
+          const defineOptions = Object.assign(
+            {
+              paranoid: true,
+              tableName: computedTableName,
+              underscored: true
+            },
+            modelOptions,
+            // 强约束：连接 forcePrefix 时不允许模型自行改写表名逃逸前缀
+            ctxConfig.forcePrefix ? { tableName: computedTableName } : null
+          );
+          if (Array.isArray(defineOptions.indexes)) {
+            defineOptions.indexes = resolveIndexes({
+              indexes: defineOptions.indexes,
+              tableName: defineOptions.tableName,
+              prefix: tablePrefix,
+              forcePrefix: ctxConfig.forcePrefix,
+              dialect: sequelize.getDialect()
+            });
+          }
           db[modelName] = sequelize.define(
             modelName,
             Object.assign(
@@ -277,16 +297,7 @@ const sequelizePlugin = fp(
               },
               model
             ),
-            Object.assign(
-              {
-                paranoid: true,
-                tableName: computedTableName,
-                underscored: true
-              },
-              modelOptions,
-              // 强约束：连接 forcePrefix 时不允许模型自行改写表名逃逸前缀
-              ctxConfig.forcePrefix ? { tableName: computedTableName } : null
-            )
+            defineOptions
           );
           db[modelName].beforeCreate(info => {
             if (info.id == null) {

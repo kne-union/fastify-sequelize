@@ -100,6 +100,8 @@ fastify.register(fastifySequelize, {
 ```
 
 > **共享库强约束**：宿主（如 app-manager）注入环境变量 `DB_TABLE_PREFIX=t_{app}_` 后，本插件默认 `forcePrefix=true`，该连接上所有 `addModels`（含 account / message / tenant 传入的 `prefix`）都必须以该前缀开头建表，无法改写逃逸。本地独立运行未设置该变量时行为与以往一致。
+>
+> **索引名**：`forcePrefix=true` 时，模型 `options.indexes` 中显式写的 `name` 会自动加上表前缀，避免共享库内不同应用、新旧表之间索引重名（Postgres / SQLite 索引名在 schema 内全局唯一）。Postgres 下超过 63 个字符的索引名（含自动生成的 `{表名}_{字段}`）会改为「前 56 字符 + `_` + 6 位哈希」，避免被数据库截断后每次 `sync` 都重复建索引报 `already exists`。
 
 ---
 
